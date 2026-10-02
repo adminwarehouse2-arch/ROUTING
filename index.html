@@ -78,10 +78,10 @@
   </div>
 
   <script>
-    // URL Google Apps Script milik Anda
+    // URL Web App Google Apps Script Baru Anda
     const GAS_URL = "https://script.google.com/macros/s/AKfycbwmmnYVnY1S_aHysIVutIwQStL8e7Owi1qWy5s0cRwe_BpLEFmu2fNUwl2h38JmTJXl/exec";
 
-    // Daftar kata kunci wilayah Jabodetabek
+    // Kategori wilayah Jabodetabek
     const KATA_KUNCI_JABODETABEK = ["jakarta", "bogor", "depok", "tangerang", "bekasi", "jaksel", "jakbar", "jaktim", "jakut", "jakpus", "tangsel"];
 
     async function fetchData() {
@@ -91,7 +91,7 @@
         return;
       }
 
-      // Tampilkan Loading
+      // Indikator Loading
       document.getElementById("containerJabodetabek").innerHTML = '<p class="text-center text-gray-500 py-6">⏳ Memuat data orderan...</p>';
       document.getElementById("containerLuarJabodetabek").innerHTML = '<p class="text-center text-gray-500 py-6">⏳ Memuat data orderan...</p>';
 
@@ -128,7 +128,6 @@
       let jaboCount = 0;
       let luarCount = 0;
 
-      // Grouping orderan berdasarkan Wilayah
       const groupedJabo = {};
       const groupedLuar = {};
 
@@ -147,13 +146,9 @@
         }
       });
 
-      // Render Grup Jabodetabek
       renderGroupCards(containerJabo, groupedJabo, "indigo");
-
-      // Render Grup Luar Jabodetabek
       renderGroupCards(containerLuar, groupedLuar, "emerald");
 
-      // Update Angka Summary
       updateMetrics(orderanList.length, jaboCount, luarCount);
     }
 
