@@ -131,7 +131,7 @@
             <span>🗓️</span> Monitoring Seluruh Rute & Status Pengiriman (Multi-Tanggal)
           </h2>
           <p class="text-xs text-indigo-200 mt-1">
-            Tanggal telah diurutkan secara kronologis. Klik pada kartu orderan untuk melihat rincian isi orderan.
+            Tanggal terurut sesuai kalender (Hari -> Bulan -> Tahun). Klik kartu orderan untuk rincian.
           </p>
         </div>
         <button onclick="fetchAllDataMatrix()" class="bg-white text-indigo-800 px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-indigo-50 transition">
@@ -207,25 +207,32 @@
     let matrixDataLoaded = false;
     let globalMatrixMap = {};
 
-    // Helper: Mengubah string tanggal (YYYY-MM-DD / DD-MM-YYYY / ISO) menjadi objek Date valid untuk Sorting
+    // Helper Khusus Mengurutkan Tanggal Kalender (DD-MM-YYYY)
     function parseDateObj(dateStr) {
       if (!dateStr || dateStr === "Tanpa Tanggal") return new Date(0);
       
-      let cleanStr = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
-      
-      // Jika format DD-MM-YYYY
-      if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(cleanStr)) {
-        const parts = cleanStr.split("-");
-        return new Date(parts[2], parts[1] - 1, parts[0]);
-      }
-      // Jika format YYYY-MM-DD
-      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(cleanStr)) {
-        const parts = cleanStr.split("-");
-        return new Date(parts[0], parts[1] - 1, parts[2]);
+      let cleanStr = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr.trim();
+      const parts = cleanStr.split(/[-/]/);
+
+      if (parts.length === 3) {
+        // Jika DD-MM-YYYY (Contoh: 02-03-2026 -> Day: 02, Month: 03, Year: 2026)
+        if (parts[2].length === 4) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const year = parseInt(parts[2], 10);
+          return new Date(year, month, day);
+        }
+        // Jika YYYY-MM-DD
+        if (parts[0].length === 4) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          return new Date(year, month, day);
+        }
       }
 
-      const d = new Date(cleanStr);
-      return isNaN(d.getTime()) ? new Date(0) : d;
+      const fallbackDate = new Date(cleanStr);
+      return isNaN(fallbackDate.getTime()) ? new Date(0) : fallbackDate;
     }
 
     // Switch Tab Menu
@@ -492,7 +499,7 @@
       }
     }
 
-    // ================= MENU 3: MATRIX & SORTING TANGGAL =================
+    // ================= MENU 3: MATRIX & SORTING KALENDER =================
     function renderMatrixTable(allOrderan) {
       const container = document.getElementById("containerMatrixTable");
       container.innerHTML = "";
@@ -526,7 +533,7 @@
         }
       });
 
-      // PENGURUTAN TANGGAL KRONOLOGIS (Tahun -> Bulan -> Hari)
+      // PENGURUTAN BENAR BERDASARKAN TANGGAL KALENDER
       const listTanggal = Array.from(tanggalSet).sort((a, b) => {
         return parseDateObj(a) - parseDateObj(b);
       });
