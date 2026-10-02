@@ -131,7 +131,7 @@
             <span>🗓️</span> Monitoring Seluruh Rute & Status Pengiriman (Multi-Tanggal)
           </h2>
           <p class="text-xs text-indigo-200 mt-1">
-            Klik pada kotak orderan di tabel bawah untuk melihat rincian isi orderan secara lengkap.
+            Tanggal telah diurutkan secara kronologis. Klik pada kartu orderan untuk melihat rincian isi orderan.
           </p>
         </div>
         <button onclick="fetchAllDataMatrix()" class="bg-white text-indigo-800 px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-indigo-50 transition">
@@ -151,7 +151,7 @@
 
   </div>
 
-  <!-- ================= POPUP MODAL DETAIL ORDERAN (KARTU KLIK) ================= -->
+  <!-- ================= POPUP MODAL DETAIL ORDERAN ================= -->
   <div id="modalDetail" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden transform transition-all">
       
@@ -168,7 +168,7 @@
         </button>
       </div>
 
-      <!-- Modal Body (Tabel Orderan Detail) -->
+      <!-- Modal Body -->
       <div class="p-5 overflow-y-auto max-h-[60vh] space-y-4">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
@@ -182,7 +182,7 @@
               </tr>
             </thead>
             <tbody id="modalTableBody" class="divide-y divide-gray-100 text-xs sm:text-sm">
-              <!-- Item orderan akan muncul di sini -->
+              <!-- Content inserted dynamically -->
             </tbody>
           </table>
         </div>
@@ -205,7 +205,28 @@
 
     let rawOrderanList = [];
     let matrixDataLoaded = false;
-    let globalMatrixMap = {}; // Penyimpanan temporer data matriks untuk modal
+    let globalMatrixMap = {};
+
+    // Helper: Mengubah string tanggal (YYYY-MM-DD / DD-MM-YYYY / ISO) menjadi objek Date valid untuk Sorting
+    function parseDateObj(dateStr) {
+      if (!dateStr || dateStr === "Tanpa Tanggal") return new Date(0);
+      
+      let cleanStr = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+      
+      // Jika format DD-MM-YYYY
+      if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(cleanStr)) {
+        const parts = cleanStr.split("-");
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+      // Jika format YYYY-MM-DD
+      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(cleanStr)) {
+        const parts = cleanStr.split("-");
+        return new Date(parts[0], parts[1] - 1, parts[2]);
+      }
+
+      const d = new Date(cleanStr);
+      return isNaN(d.getTime()) ? new Date(0) : d;
+    }
 
     // Switch Tab Menu
     function switchTab(tabName) {
@@ -471,7 +492,7 @@
       }
     }
 
-    // ================= MENU 3: MATRIX & POPUP VIEW =================
+    // ================= MENU 3: MATRIX & SORTING TANGGAL =================
     function renderMatrixTable(allOrderan) {
       const container = document.getElementById("containerMatrixTable");
       container.innerHTML = "";
@@ -483,7 +504,7 @@
 
       const tanggalSet = new Set();
       const wilayahSet = new Set();
-      globalMatrixMap = {}; // Reset global map
+      globalMatrixMap = {};
 
       allOrderan.forEach(item => {
         let tgl = item["Tanggal Kirim"] || item.Tanggal || "Tanpa Tanggal";
@@ -505,7 +526,11 @@
         }
       });
 
-      const listTanggal = Array.from(tanggalSet).sort();
+      // PENGURUTAN TANGGAL KRONOLOGIS (Tahun -> Bulan -> Hari)
+      const listTanggal = Array.from(tanggalSet).sort((a, b) => {
+        return parseDateObj(a) - parseDateObj(b);
+      });
+
       const listWilayah = Array.from(wilayahSet).sort();
 
       let tableHtml = `
@@ -531,7 +556,6 @@
       `;
 
       listWilayah.forEach(wil => {
-        // Safe string escaping untuk panggilan function JS
         const wilSafe = wil.replace(/'/g, "\\'");
 
         tableHtml += `
@@ -551,7 +575,6 @@
           if (!hasRouted && !hasUnrouted) {
             tableHtml += `<div class="text-center text-gray-300 py-3 italic">- Tidak ada order -</div>`;
           } else {
-            // Kartu Ada Rute (Bisa Diklik)
             if (hasRouted) {
               const custSet = new Set(cellData.routed.map(i => i["Nama Customer"]));
               tableHtml += `
@@ -571,7 +594,6 @@
               `;
             }
 
-            // Kartu Belum Ada Rute (Bisa Diklik)
             if (hasUnrouted) {
               const custUnroutedSet = new Set(cellData.unrouted.map(i => i["Nama Customer"]));
               tableHtml += `
@@ -606,7 +628,6 @@
       container.innerHTML = tableHtml;
     }
 
-    // ================= FUNGSI BUKA / TUTUP POPUP MODAL =================
     function openModal(wilayah, tanggal, type) {
       const modal = document.getElementById("modalDetail");
       const title = document.getElementById("modalTitle");
