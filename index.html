@@ -6,6 +6,24 @@
   <title>Dashboard Routing Pengiriman</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom Scrollbar untuk Geser Kesamping */
+    .custom-scroll::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
 
@@ -22,8 +40,8 @@
   <!-- Container Utama -->
   <div class="container mx-auto mt-6 px-4 mb-12">
     
-    <!-- Filter Bar & Summary -->
-    <div class="bg-white p-6 rounded-lg shadow-md mb-6 flex flex-wrap justify-between items-center gap-4">
+    <!-- Filter Bar & Summary (Untuk Tab 1 & Tab 2) -->
+    <div id="filterSection" class="bg-white p-6 rounded-lg shadow-md mb-6 flex flex-wrap justify-between items-center gap-4">
       <div class="flex items-center gap-3">
         <label for="filterTanggal" class="font-semibold text-gray-700">Pilih Tanggal Kirim:</label>
         <input type="date" id="filterTanggal" onchange="fetchData()" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
@@ -50,18 +68,20 @@
     </div>
 
     <!-- NAVIGATION TAB MENU -->
-    <div class="flex border-b border-gray-300 mb-6 bg-white rounded-t-lg px-4 pt-2 shadow-sm">
-      <button id="tabDetailBtn" onclick="switchTab('detail')" class="py-3 px-6 text-indigo-700 font-bold border-b-4 border-indigo-600 focus:outline-none transition flex items-center gap-2">
-        <span>📊</span> Dashboard Detail (Semua Area)
+    <div class="flex border-b border-gray-300 mb-6 bg-white rounded-t-lg px-4 pt-2 shadow-sm overflow-x-auto">
+      <button id="tabDetailBtn" onclick="switchTab('detail')" class="py-3 px-5 text-indigo-700 font-bold border-b-4 border-indigo-600 focus:outline-none transition flex items-center gap-2 whitespace-nowrap">
+        <span>📊</span> Dashboard Detail
       </button>
-      <button id="tabRingkasBtn" onclick="switchTab('ringkas')" class="py-3 px-6 text-gray-500 font-bold border-b-4 border-transparent hover:text-indigo-600 focus:outline-none transition flex items-center gap-2">
+      <button id="tabRingkasBtn" onclick="switchTab('ringkas')" class="py-3 px-5 text-gray-500 font-bold border-b-4 border-transparent hover:text-indigo-600 focus:outline-none transition flex items-center gap-2 whitespace-nowrap">
         <span>📍</span> Ringkasan Rute Jabodetabek
+      </button>
+      <button id="tabMatrixBtn" onclick="switchTab('matrix')" class="py-3 px-5 text-gray-500 font-bold border-b-4 border-transparent hover:text-indigo-600 focus:outline-none transition flex items-center gap-2 whitespace-nowrap">
+        <span>🗓️</span> Matrix All Route (Geser Kesamping)
       </button>
     </div>
 
     <!-- ================= TAB 1: DASHBOARD DETAIL ================= -->
     <div id="tabDetailView" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
       <!-- Kolom Jabodetabek -->
       <div class="bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-xl font-bold mb-4 text-indigo-900 border-b pb-2 flex justify-between items-center">
@@ -83,7 +103,6 @@
           <p class="text-gray-500 italic text-center py-8">Silakan pilih tanggal kirim di atas.</p>
         </div>
       </div>
-
     </div>
 
     <!-- ================= TAB 2: RINGKASAN RUTE JABODETABEK ================= -->
@@ -93,7 +112,7 @@
           <h2 class="text-xl font-bold text-indigo-900 flex items-center gap-2">
             <span>🗺️</span> Kluster Rute Tujuan Pengiriman Jabodetabek
           </h2>
-          <p class="text-xs text-gray-500 mt-1">Menampilkan ringkasan wilayah, customer, dan daftar nomor dokumen untuk pengiriman Jabodetabek.</p>
+          <p class="text-xs text-gray-500 mt-1">Menampilkan ringkasan wilayah, customer, dan daftar nomor dokumen.</p>
         </div>
         <span id="ringkasTanggalBadge" class="bg-indigo-100 text-indigo-800 text-sm font-semibold px-3 py-1 rounded-full">
           Tanggal: -
@@ -105,6 +124,35 @@
       </div>
     </div>
 
+    <!-- ================= TAB 3: MATRIX ALL ROUTE (GESER KESAMPING) ================= -->
+    <div id="tabMatrixView" class="hidden space-y-6">
+      
+      <!-- Info Banner Menu 3 -->
+      <div class="bg-gradient-to-r from-indigo-800 to-indigo-600 text-white p-5 rounded-lg shadow-md flex justify-between items-center flex-wrap gap-4">
+        <div>
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <span>🗓️</span> Monitoring Seluruh Rute & Status Pengiriman (Multi-Tanggal)
+          </h2>
+          <p class="text-xs text-indigo-200 mt-1">
+            Melihat ketersediaan rute per wilayah dan mendeteksi orderan yang <b>belum memiliki rute (Pending)</b>. Geser tabel ke kanan untuk melihat tanggal lainnya.
+          </p>
+        </div>
+        <button onclick="fetchAllDataMatrix()" class="bg-white text-indigo-800 px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-indigo-50 transition">
+          🔄 Refresh Semua Data
+        </button>
+      </div>
+
+      <!-- Tabel Geser Kesamping -->
+      <div class="bg-white rounded-lg shadow-md p-4 overflow-hidden">
+        <div class="overflow-x-auto custom-scroll max-h-[700px]">
+          <div id="containerMatrixTable" class="min-w-[900px]">
+            <p class="text-center text-gray-500 py-12">⏳ Menyiapkan tampilan matriks seluruh tanggal...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
   <script>
@@ -112,27 +160,51 @@
     const KATA_KUNCI_JABODETABEK = ["jakarta", "bogor", "depok", "tangerang", "bekasi", "jaksel", "jakbar", "jaktim", "jakut", "jakpus", "tangsel"];
 
     let rawOrderanList = [];
+    let matrixDataLoaded = false;
 
     // Switch Tab Menu
     function switchTab(tabName) {
       const tabDetailBtn = document.getElementById("tabDetailBtn");
       const tabRingkasBtn = document.getElementById("tabRingkasBtn");
+      const tabMatrixBtn = document.getElementById("tabMatrixBtn");
+
       const tabDetailView = document.getElementById("tabDetailView");
       const tabRingkasView = document.getElementById("tabRingkasView");
+      const tabMatrixView = document.getElementById("tabMatrixView");
+      const filterSection = document.getElementById("filterSection");
+
+      // Reset style tombol
+      const inactiveClass = "py-3 px-5 text-gray-500 font-bold border-b-4 border-transparent hover:text-indigo-600 focus:outline-none transition flex items-center gap-2 whitespace-nowrap";
+      const activeClass = "py-3 px-5 text-indigo-700 font-bold border-b-4 border-indigo-600 focus:outline-none transition flex items-center gap-2 whitespace-nowrap";
+
+      tabDetailBtn.className = inactiveClass;
+      tabRingkasBtn.className = inactiveClass;
+      tabMatrixBtn.className = inactiveClass;
+
+      tabDetailView.classList.add("hidden");
+      tabRingkasView.classList.add("hidden");
+      tabMatrixView.classList.add("hidden");
 
       if (tabName === 'detail') {
-        tabDetailBtn.className = "py-3 px-6 text-indigo-700 font-bold border-b-4 border-indigo-600 focus:outline-none transition flex items-center gap-2";
-        tabRingkasBtn.className = "py-3 px-6 text-gray-500 font-bold border-b-4 border-transparent hover:text-indigo-600 focus:outline-none transition flex items-center gap-2";
+        tabDetailBtn.className = activeClass;
         tabDetailView.classList.remove("hidden");
-        tabRingkasView.classList.add("hidden");
-      } else {
-        tabRingkasBtn.className = "py-3 px-6 text-indigo-700 font-bold border-b-4 border-indigo-600 focus:outline-none transition flex items-center gap-2";
-        tabDetailBtn.className = "py-3 px-6 text-gray-500 font-bold border-b-4 border-transparent hover:text-indigo-600 focus:outline-none transition flex items-center gap-2";
+        filterSection.classList.remove("hidden");
+      } else if (tabName === 'ringkas') {
+        tabRingkasBtn.className = activeClass;
         tabRingkasView.classList.remove("hidden");
-        tabDetailView.classList.add("hidden");
+        filterSection.classList.remove("hidden");
+      } else if (tabName === 'matrix') {
+        tabMatrixBtn.className = activeClass;
+        tabMatrixView.classList.remove("hidden");
+        filterSection.classList.add("hidden"); // Sembunyikan filter tanggal manual
+
+        if (!matrixDataLoaded) {
+          fetchAllDataMatrix();
+        }
       }
     }
 
+    // Single Date Fetch (Tab 1 & Tab 2)
     async function fetchData() {
       const tanggal = document.getElementById("filterTanggal").value;
       if (!tanggal) {
@@ -158,6 +230,29 @@
       } catch (err) {
         console.error(err);
         alert("Terjadi kesalahan saat menghubungkan ke Google Sheets.");
+      }
+    }
+
+    // Fetch All Data untuk Tab 3 Matrix
+    async function fetchAllDataMatrix() {
+      const container = document.getElementById("containerMatrixTable");
+      container.innerHTML = '<p class="text-center text-gray-500 py-12">⏳ Memuat seluruh data rute & tanggal dari Google Sheets...</p>';
+
+      try {
+        // Mengirimkan parameter mode=all
+        const response = await fetch(`${GAS_URL}?mode=all`);
+        const data = await response.json();
+
+        if (data.status === "success" && data.data_orderan) {
+          matrixDataLoaded = true;
+          renderMatrixTable(data.data_orderan);
+        } else {
+          // Fallback jika backend belum support mode=all, mencoba ambril tanpa tanggal
+          renderMatrixTable(data.data_orderan || []);
+        }
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<p class="text-center text-red-500 py-12">❌ Terjadi kesalahan saat memuat data matriks rute.</p>';
       }
     }
 
@@ -200,14 +295,10 @@
         }
       });
 
-      // Render Tab 1 (Detail)
       renderGroupCards(containerJabo, groupedJabo, "indigo");
       renderGroupCards(containerLuar, groupedLuar, "emerald");
-
-      // Render Tab 2 (Ringkasan Rute Jabodetabek)
       renderRingkasanRute(containerRingkas, groupedJabo, tanggal);
 
-      // Update Metrics Summary
       updateMetrics(orderanList.length, jaboCount, luarCount);
     }
 
@@ -264,7 +355,6 @@
       }
     }
 
-    // Fungsi Khusus untuk Menu Ke-2: Ringkasan Rute Jabodetabek
     function renderRingkasanRute(container, groupedJabo, tanggal) {
       if (Object.keys(groupedJabo).length === 0) {
         container.innerHTML = '<p class="text-center text-gray-400 py-6">Tidak ada rute Jabodetabek pada tanggal ini.</p>';
@@ -272,7 +362,6 @@
       }
 
       for (const [wilayah, items] of Object.entries(groupedJabo)) {
-        // Konsolidasi customer & dokumen unik per wilayah
         const customerDocsMap = {};
 
         items.forEach(item => {
@@ -340,6 +429,140 @@
 
         container.appendChild(klusterCard);
       }
+    }
+
+    // ================= FUNGSI UNTUK MENU 3 (MATRIX GESER KESAMPING) =================
+    function renderMatrixTable(allOrderan) {
+      const container = document.getElementById("containerMatrixTable");
+      container.innerHTML = "";
+
+      if (!allOrderan || allOrderan.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-12">Tidak ada data orderan yang ditemukan.</p>';
+        return;
+      }
+
+      // 1. Kumpulkan daftar Tanggal Unik & Wilayah Unik
+      const tanggalSet = new Set();
+      const wilayahSet = new Set();
+      
+      // Struktur Data: matrixMap[Wilayah][Tanggal] = { routed: [], unrouted: [] }
+      const matrixMap = {};
+
+      allOrderan.forEach(item => {
+        let tgl = item["Tanggal Kirim"] || item.Tanggal || "Tanpa Tanggal";
+        if (tgl.includes("T")) tgl = tgl.split("T")[0]; // Format ISO Date ke YYYY-MM-DD
+
+        const wil = (item.Wilayah || "Lainnya").trim();
+        const status = (item.Status || "Pending").toLowerCase();
+
+        tanggalSet.add(tgl);
+        wilayahSet.add(wil);
+
+        if (!matrixMap[wil]) matrixMap[wil] = {};
+        if (!matrixMap[wil][tgl]) matrixMap[wil][tgl] = { routed: [], unrouted: [] };
+
+        if (status.includes("routed") || status.includes("terkirim") || status.includes("closed")) {
+          matrixMap[wil][tgl].routed.push(item);
+        } else {
+          matrixMap[wil][tgl].unrouted.push(item);
+        }
+      });
+
+      const listTanggal = Array.from(tanggalSet).sort();
+      const listWilayah = Array.from(wilayahSet).sort();
+
+      // 2. Buat Elemen Tabel HTML
+      let tableHtml = `
+        <table class="w-full border-collapse text-left border border-gray-200">
+          <thead>
+            <tr class="bg-indigo-900 text-white text-xs uppercase tracking-wider">
+              <th class="p-3 border-r border-indigo-800 sticky left-0 bg-indigo-900 z-10 w-48 shadow">Wilayah / Kluster</th>
+      `;
+
+      // Header Tanggal (Di-scroll Ke Samping)
+      listTanggal.forEach(tgl => {
+        tableHtml += `
+          <th class="p-3 border-r border-indigo-800 text-center min-w-[220px]">
+            <div class="font-bold text-sm text-yellow-300">${tgl}</div>
+            <div class="text-[10px] text-indigo-200 font-normal mt-0.5">Rute & Status</div>
+          </th>
+        `;
+      });
+
+      tableHtml += `
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 text-xs">
+      `;
+
+      // Body Tabel Per Wilayah
+      listWilayah.forEach(wil => {
+        tableHtml += `
+          <tr class="hover:bg-gray-50">
+            <td class="p-3 font-bold text-indigo-950 border-r border-gray-200 bg-gray-50 sticky left-0 z-10 shadow-sm align-top">
+              ${wil}
+            </td>
+        `;
+
+        listTanggal.forEach(tgl => {
+          const cellData = matrixMap[wil] && matrixMap[wil][tgl] ? matrixMap[wil][tgl] : { routed: [], unrouted: [] };
+          const hasRouted = cellData.routed.length > 0;
+          const hasUnrouted = cellData.unrouted.length > 0;
+
+          tableHtml += `<td class="p-2 border-r border-gray-200 align-top min-w-[220px]">`;
+
+          if (!hasRouted && !hasUnrouted) {
+            tableHtml += `<div class="text-center text-gray-300 py-3 italic">- Tidak ada order -</div>`;
+          } else {
+            // Tampilkan Rute yang Ada (Routed / Terkirim)
+            if (hasRouted) {
+              const custSet = new Set(cellData.routed.map(i => i["Nama Customer"]));
+              tableHtml += `
+                <div class="bg-emerald-50 border border-emerald-200 rounded p-2 mb-1.5">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="font-bold text-emerald-800 text-[11px] flex items-center gap-1">
+                      <span>✅ Ada Rute</span>
+                    </span>
+                    <span class="bg-emerald-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">${cellData.routed.length} Order</span>
+                  </div>
+                  <div class="text-[11px] text-emerald-900 font-semibold truncate" title="${Array.from(custSet).join(', ')}">
+                    👤 ${Array.from(custSet).slice(0, 2).join(', ')} ${custSet.size > 2 ? '...' : ''}
+                  </div>
+                </div>
+              `;
+            }
+
+            // Tampilkan yang Belum Ada Rute (Pending / Unrouted)
+            if (hasUnrouted) {
+              const custUnroutedSet = new Set(cellData.unrouted.map(i => i["Nama Customer"]));
+              tableHtml += `
+                <div class="bg-rose-50 border border-rose-200 rounded p-2">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="font-bold text-rose-800 text-[11px] flex items-center gap-1">
+                      <span>⚠️ Belum Ada Rute</span>
+                    </span>
+                    <span class="bg-rose-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">${cellData.unrouted.length} Order</span>
+                  </div>
+                  <div class="text-[11px] text-rose-900 font-semibold truncate" title="${Array.from(custUnroutedSet).join(', ')}">
+                    👤 ${Array.from(custUnroutedSet).join(', ')}
+                  </div>
+                </div>
+              `;
+            }
+          }
+
+          tableHtml += `</td>`;
+        });
+
+        tableHtml += `</tr>`;
+      });
+
+      tableHtml += `
+          </tbody>
+        </table>
+      `;
+
+      container.innerHTML = tableHtml;
     }
 
     function updateMetrics(total, jabo, luar) {
