@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Routing Pengiriman</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+  <!-- Header / Topbar -->
+  <nav class="bg-indigo-700 p-4 text-white shadow-md">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold flex items-center gap-2">
+        <span>🚚</span> Dashboard Routing Pengiriman
+      </h1>
+      <span class="text-xs sm:text-sm bg-indigo-800 px-3 py-1 rounded-full">Connected to Google Sheets</span>
+    </div>
+  </nav>
+
+  <!-- Container Utama -->
+  <div class="container mx-auto mt-6 px-4 mb-12">
+    
+    <!-- Filter Bar & Summary -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6 flex flex-wrap justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <label for="filterTanggal" class="font-semibold text-gray-700">Pilih Tanggal Kirim:</label>
+        <input type="date" id="filterTanggal" onchange="fetchData()" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+        <button onclick="fetchData()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow transition">
+          Cari Orderan
+        </button>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="flex gap-4">
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded min-w-[100px]">
+          <p class="text-xs text-blue-600 font-bold uppercase">Total Order</p>
+          <p id="totalOrderCount" class="text-xl font-bold text-blue-900">0</p>
+        </div>
+        <div class="bg-indigo-50 border-l-4 border-indigo-500 p-3 rounded min-w-[100px]">
+          <p class="text-xs text-indigo-600 font-bold uppercase">Jabodetabek</p>
+          <p id="jabodetabekCount" class="text-xl font-bold text-indigo-900">0</p>
+        </div>
+        <div class="bg-emerald-50 border-l-4 border-emerald-500 p-3 rounded min-w-[100px]">
+          <p class="text-xs text-emerald-600 font-bold uppercase">Luar Jabodetabek</p>
+          <p id="luarJabodetabekCount" class="text-xl font-bold text-emerald-900">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Area Konten Utama Dashboard -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Kolom Jabodetabek -->
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-indigo-900 border-b pb-2 flex justify-between items-center">
+          <span>📍 Area Jabodetabek</span>
+          <span id="badgeJabodetabek" class="text-xs bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full font-semibold">0 Order</span>
+        </h2>
+        <div id="containerJabodetabek" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+          <p class="text-gray-500 italic text-center py-8">Silakan pilih tanggal kirim di atas.</p>
+        </div>
+      </div>
+
+      <!-- Kolom Luar Jabodetabek -->
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-emerald-900 border-b pb-2 flex justify-between items-center">
+          <span>🌐 Area Luar Jabodetabek</span>
+          <span id="badgeLuarJabodetabek" class="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full font-semibold">0 Order</span>
+        </h2>
+        <div id="containerLuarJabodetabek" class="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+          <p class="text-gray-500 italic text-center py-8">Silakan pilih tanggal kirim di atas.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // URL Google Apps Script milik Anda
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwmmnYVnY1S_aHysIVutIwQStL8e7Owi1qWy5s0cRwe_BpLEFmu2fNUwl2h38JmTJXl/exec";
+
+    // Daftar kata kunci wilayah Jabodetabek
+    const KATA_KUNCI_JABODETABEK = ["jakarta", "bogor", "depok", "tangerang", "bekasi", "jaksel", "jakbar", "jaktim", "jakut", "jakpus", "tangsel"];
+
+    async function fetchData() {
+      const tanggal = document.getElementById("filterTanggal").value;
+      if (!tanggal) {
+        alert("Pilih tanggal kirim terlebih dahulu!");
+        return;
+      }
+
+      // Tampilkan Loading
+      document.getElementById("containerJabodetabek").innerHTML = '<p class="text-center text-gray-500 py-6">⏳ Memuat data orderan...</p>';
+      document.getElementById("containerLuarJabodetabek").innerHTML = '<p class="text-center text-gray-500 py-6">⏳ Memuat data orderan...</p>';
+
+      try {
+        const response = await fetch(`${GAS_URL}?tanggal=${tanggal}`);
+        const data = await response.json();
+
+        if (data.status === "success") {
+          renderDashboard(data.data_orderan);
+        } else {
+          alert("Gagal mengambil data: " + data.message);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Terjadi kesalahan saat menghubungkan ke Google Sheets.");
+      }
+    }
+
+    function renderDashboard(orderanList) {
+      const containerJabo = document.getElementById("containerJabodetabek");
+      const containerLuar = document.getElementById("containerLuarJabodetabek");
+
+      containerJabo.innerHTML = "";
+      containerLuar.innerHTML = "";
+
+      if (!orderanList || orderanList.length === 0) {
+        const emptyMsg = '<p class="text-center text-gray-400 py-6">Tidak ada orderan pada tanggal ini.</p>';
+        containerJabo.innerHTML = emptyMsg;
+        containerLuar.innerHTML = emptyMsg;
+        updateMetrics(0, 0, 0);
+        return;
+      }
+
+      let jaboCount = 0;
+      let luarCount = 0;
+
+      // Grouping orderan berdasarkan Wilayah
+      const groupedJabo = {};
+      const groupedLuar = {};
+
+      orderanList.forEach(item => {
+        const wilayahName = (item.Wilayah || "Lainnya").trim();
+        const isJabo = KATA_KUNCI_JABODETABEK.some(kategori => wilayahName.toLowerCase().includes(kategori));
+
+        if (isJabo) {
+          jaboCount++;
+          if (!groupedJabo[wilayahName]) groupedJabo[wilayahName] = [];
+          groupedJabo[wilayahName].push(item);
+        } else {
+          luarCount++;
+          if (!groupedLuar[wilayahName]) groupedLuar[wilayahName] = [];
+          groupedLuar[wilayahName].push(item);
+        }
+      });
+
+      // Render Grup Jabodetabek
+      renderGroupCards(containerJabo, groupedJabo, "indigo");
+
+      // Render Grup Luar Jabodetabek
+      renderGroupCards(containerLuar, groupedLuar, "emerald");
+
+      // Update Angka Summary
+      updateMetrics(orderanList.length, jaboCount, luarCount);
+    }
+
+    function renderGroupCards(container, groupedData, themeColor) {
+      if (Object.keys(groupedData).length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-6">Tidak ada orderan di area ini.</p>';
+        return;
+      }
+
+      for (const [wilayah, items] of Object.entries(groupedData)) {
+        const card = document.createElement("div");
+        card.className = "border border-gray-200 bg-white rounded-lg p-4 shadow-sm hover:shadow transition";
+
+        let itemsHtml = items.map(item => `
+          <tr class="border-b text-xs sm:text-sm">
+            <td class="py-2 font-semibold text-gray-700">${item["No Dokumen"] || '-'}</td>
+            <td class="py-2">${item["Nama Customer"] || '-'}</td>
+            <td class="py-2">${item["Nama Barang"] || '-'}</td>
+            <td class="py-2 text-right font-bold">${item["Qty"] || 0} ${item["Unit"] || ''}</td>
+            <td class="py-2 text-center">
+              <span class="px-2 py-0.5 text-xs rounded-full font-medium ${item.Status === 'Routed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                ${item.Status || 'Pending'}
+              </span>
+            </td>
+          </tr>
+        `).join("");
+
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-base text-gray-800 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-${themeColor}-600"></span> ${wilayah}
+            </h3>
+            <span class="text-xs bg-${themeColor}-100 text-${themeColor}-800 px-2.5 py-0.5 rounded-full font-medium">${items.length} Dokumen</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="text-xs text-gray-500 border-b uppercase">
+                  <th class="pb-2">No Dok</th>
+                  <th class="pb-2">Customer</th>
+                  <th class="pb-2">Barang</th>
+                  <th class="pb-2 text-right">Qty</th>
+                  <th class="pb-2 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        container.appendChild(card);
+      }
+    }
+
+    function updateMetrics(total, jabo, luar) {
+      document.getElementById("totalOrderCount").innerText = total;
+      document.getElementById("jabodetabekCount").innerText = jabo;
+      document.getElementById("luarJabodetabekCount").innerText = luar;
+
+      document.getElementById("badgeJabodetabek").innerText = `${jabo} Order`;
+      document.getElementById("badgeLuarJabodetabek").innerText = `${luar} Order`;
+    }
+  </script>
+</body>
+</html>
